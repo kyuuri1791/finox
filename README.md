@@ -18,8 +18,6 @@ Or install directly:
 gem install finox
 ```
 
-A Rust toolchain is required to build the native extension.
-
 ## Usage
 
 ```ruby
