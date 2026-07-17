@@ -2,7 +2,7 @@ PATH
   remote: .
   specs:
     finox (0.1.0)
-      rb_sys (~> 0.9.91)
+      rb_sys (~> 0.9.128)
 
 GEM
   remote: https://rubygems.org/
