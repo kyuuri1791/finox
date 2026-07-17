@@ -6,13 +6,11 @@ Finox parses SQL with Rust and returns the AST as plain Ruby Hashes and Arrays.
 
 ## Installation
 
-Add to your Gemfile:
-
 ```bash
 bundle add finox
 ```
 
-Or install directly:
+Or without Bundler:
 
 ```bash
 gem install finox
