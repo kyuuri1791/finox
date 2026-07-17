@@ -1,0 +1,15 @@
+[package]
+name = "finox"
+version = "0.1.0"
+edition = "2021"
+authors = ["kyuuri1791"]
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+magnus = "0.8"
+serde_magnus = "0.11.0"
+sqlparser = { version = "0.62.0", features = ["serde"] }
