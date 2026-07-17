@@ -56,3 +56,7 @@ bundle exec rake          # compile + spec + rubocop
 ## License
 
 [MIT](LICENSE.txt)
+
+Precompiled gems statically link Rust crates, including sqlparser-rs
+(Apache-2.0). See [LICENSE-THIRD-PARTY.txt](LICENSE-THIRD-PARTY.txt) for
+their licenses and attributions.
