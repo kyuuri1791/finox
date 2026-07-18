@@ -50,6 +50,12 @@ RSpec.describe Finox do
 
       expect(Finox.parse(sql).tables).to eq(%w[orders users])
     end
+
+    it "does not apply CTE names across statements" do
+      sql = "SELECT * FROM users; WITH users AS (SELECT 1) SELECT * FROM users"
+
+      expect(Finox.parse(sql).tables).to eq(["users"])
+    end
   end
 
   describe "#select_tables" do

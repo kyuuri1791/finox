@@ -32,19 +32,19 @@ impl ParseResult {
     }
 
     fn tables(&self) -> Vec<String> {
-        collect_tables(&self.statements)
+        dedup(self.statements.iter().flat_map(collect_tables).collect())
     }
 
     fn select_tables(&self) -> Vec<String> {
-        collect_select_tables(&self.statements)
+        dedup(self.statements.iter().flat_map(collect_select_tables).collect())
     }
 
     fn dml_tables(&self) -> Vec<String> {
-        collect_dml_tables(&self.statements)
+        dedup(self.statements.iter().flat_map(collect_dml_tables).collect())
     }
 
     fn ddl_tables(&self) -> Vec<String> {
-        collect_ddl_tables(&self.statements)
+        dedup(self.statements.iter().flat_map(collect_ddl_tables).collect())
     }
 
     fn columns(&self) -> Vec<String> {
@@ -96,7 +96,7 @@ fn json_to_ruby(ruby: &Ruby, value: &serde_json::Value) -> Result<Value, Error> 
             array.as_value()
         }
         Json::Object(map) => {
-            let hash = ruby.hash_new_capa(map.len());
+            let hash = ruby.hash_new();
             for (key, item) in map {
                 hash.aset(key.as_str(), json_to_ruby(ruby, item)?)?;
             }
