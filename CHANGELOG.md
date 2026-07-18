@@ -1,4 +1,4 @@
-## [Unreleased]
+## [0.2.0] - 2026-07-18
 
 - **Breaking:** `Finox.parse` now returns a `Finox::Result` instead of a plain Array.
 - Add `Finox::Result#tables`, which returns the tables referenced across all
@@ -21,6 +21,7 @@
 - Add `Finox::Result#statements`, which returns the AST of each parsed
   statement as plain Hashes/Arrays. All keys are Strings (previously enum
   variant names were Strings but struct fields were Symbols).
+- Precompiled gems now include a shared object for Ruby 4.0.
 
 ## [0.1.0] - 2026-07-17
 
