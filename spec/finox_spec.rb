@@ -52,25 +52,89 @@ RSpec.describe Finox do
     end
   end
 
+  describe "#columns" do
+    it "returns the columns referenced by the query" do
+      expect(Finox.parse("SELECT id, name FROM users WHERE id = 1").columns).to eq(%w[id name])
+    end
+
+    it "collects columns from WHERE, GROUP BY and ORDER BY" do
+      sql = "SELECT COUNT(*) FROM users WHERE age > 20 GROUP BY city ORDER BY city"
+
+      expect(Finox.parse(sql).columns).to eq(%w[age city])
+    end
+
+    it "returns qualified columns joined with dots" do
+      sql = "SELECT u.id FROM users u JOIN orders o ON o.user_id = u.id"
+
+      expect(Finox.parse(sql).columns).to eq(%w[u.id o.user_id])
+    end
+
+    it "collects the column list of INSERT" do
+      expect(Finox.parse("INSERT INTO logs (msg, level) VALUES ('x', 1)").columns).to eq(%w[msg level])
+    end
+
+    it "collects assignment targets of UPDATE" do
+      sql = "UPDATE users SET name = 'a', age = age + 1 WHERE id = 1"
+
+      expect(Finox.parse(sql).columns).to eq(%w[name age id])
+    end
+
+    it "returns backtick identifiers unquoted" do
+      expect(Finox.parse("SELECT `name` FROM users").columns).to eq(["name"])
+    end
+
+    it "does not include wildcards" do
+      expect(Finox.parse("SELECT * FROM users").columns).to eq([])
+    end
+  end
+
+  describe "#statement_types" do
+    it "returns the type of each statement" do
+      sql = "SELECT 1; INSERT INTO logs (msg) VALUES ('x'); " \
+            "UPDATE users SET name = 'a'; DELETE FROM users"
+
+      expect(Finox.parse(sql).statement_types).to eq(%w[Query Insert Update Delete])
+    end
+  end
+
   describe "#statements" do
-    it "returns an array of statements as hashes" do
-      statements = Finox.parse("SELECT id, name FROM users WHERE id = 1").statements
-
-      expect(statements).to be_an(Array)
-      expect(statements.length).to eq(1)
-      expect(statements.first).to have_key("Query")
-    end
-
-    it "parses MySQL backtick identifiers" do
-      statements = Finox.parse("SELECT `id` FROM `users`").statements
-
-      expect(statements.first).to have_key("Query")
-    end
-
-    it "parses multiple statements" do
+    it "returns one Finox::Statement per statement" do
       statements = Finox.parse("SELECT 1; SELECT 2").statements
 
+      expect(statements).to be_an(Array)
       expect(statements.length).to eq(2)
+      expect(statements).to all(be_a(Finox::Statement))
+    end
+  end
+end
+
+RSpec.describe Finox::Statement do
+  let(:statements) { Finox.parse("SELECT hoge FROM table1; SELECT fuga FROM table2").statements }
+
+  describe "#tables" do
+    it "returns the tables per statement" do
+      expect(statements.map(&:tables)).to eq([["table1"], ["table2"]])
+    end
+  end
+
+  describe "#columns" do
+    it "returns the columns per statement" do
+      expect(statements.map(&:columns)).to eq([["hoge"], ["fuga"]])
+    end
+  end
+
+  describe "#statement_type" do
+    it "returns the statement's type" do
+      expect(Finox.parse("SELECT 1").statements.first.statement_type).to eq("Query")
+    end
+  end
+
+  describe "#to_h" do
+    it "returns the statement AST as a Hash" do
+      statement = Finox.parse("SELECT `id` FROM `users`").statements.first
+
+      expect(statement.to_h).to be_a(Hash)
+      expect(statement.to_h).to have_key("Query")
     end
   end
 end
