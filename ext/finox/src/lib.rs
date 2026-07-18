@@ -79,38 +79,6 @@ impl ParsedStatement {
     fn to_h(ruby: &Ruby, rb_self: &Self) -> Result<Value, Error> {
         serde_magnus::serialize(ruby, &rb_self.statement)
     }
-
-    fn tables(&self) -> Vec<String> {
-        collect_tables(&self.statement)
-    }
-
-    fn select_tables(&self) -> Vec<String> {
-        collect_select_tables(&self.statement)
-    }
-
-    fn dml_tables(&self) -> Vec<String> {
-        collect_dml_tables(&self.statement)
-    }
-
-    fn ddl_tables(&self) -> Vec<String> {
-        collect_ddl_tables(&self.statement)
-    }
-
-    fn columns(&self) -> Vec<String> {
-        collect_columns(&self.statement)
-    }
-
-    fn statement_type(&self) -> String {
-        statement_type(&self.statement)
-    }
-
-    fn normalize(&self) -> String {
-        normalize_statement(&self.statement)
-    }
-
-    fn fingerprint(&self) -> String {
-        fingerprint(&self.normalize())
-    }
 }
 
 fn fingerprint(sql: &str) -> String {
@@ -391,14 +359,6 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
 
     let statement = module.define_class("Statement", ruby.class_object())?;
     statement.define_method("to_h", method!(ParsedStatement::to_h, 0))?;
-    statement.define_method("tables", method!(ParsedStatement::tables, 0))?;
-    statement.define_method("select_tables", method!(ParsedStatement::select_tables, 0))?;
-    statement.define_method("dml_tables", method!(ParsedStatement::dml_tables, 0))?;
-    statement.define_method("ddl_tables", method!(ParsedStatement::ddl_tables, 0))?;
-    statement.define_method("columns", method!(ParsedStatement::columns, 0))?;
-    statement.define_method("statement_type", method!(ParsedStatement::statement_type, 0))?;
-    statement.define_method("normalize", method!(ParsedStatement::normalize, 0))?;
-    statement.define_method("fingerprint", method!(ParsedStatement::fingerprint, 0))?;
 
     module.define_singleton_method("parse", function!(parse, 1))?;
     Ok(())

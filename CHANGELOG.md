@@ -19,9 +19,7 @@
   the normalized SQL, for grouping queries that differ only in literals or
   formatting.
 - Add `Finox::Result#statements`, which returns one `Finox::Statement` per
-  parsed statement, exposing per-statement `#tables`, `#select_tables`,
-  `#dml_tables`, `#ddl_tables`, `#columns`, `#statement_type`, `#normalize`
-  and `#fingerprint` as well as `#to_h` (the AST as plain Hashes/Arrays).
+  parsed statement, exposing the AST as plain Hashes/Arrays via `#to_h`.
 
 ## [0.1.0] - 2026-07-17
 

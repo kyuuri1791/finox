@@ -199,62 +199,6 @@ RSpec.describe Finox do
 end
 
 RSpec.describe Finox::Statement do
-  let(:statements) { Finox.parse("SELECT hoge FROM table1; SELECT fuga FROM table2").statements }
-  let(:mixed) { Finox.parse("INSERT INTO logs SELECT * FROM events; DROP TABLE archives").statements }
-
-  describe "#tables" do
-    it "returns the tables per statement" do
-      expect(statements.map(&:tables)).to eq([["table1"], ["table2"]])
-    end
-  end
-
-  describe "#select_tables" do
-    it "returns the read tables per statement" do
-      expect(mixed.map(&:select_tables)).to eq([["events"], []])
-    end
-  end
-
-  describe "#dml_tables" do
-    it "returns the written tables per statement" do
-      expect(mixed.map(&:dml_tables)).to eq([["logs"], []])
-    end
-  end
-
-  describe "#ddl_tables" do
-    it "returns the DDL-targeted tables per statement" do
-      expect(mixed.map(&:ddl_tables)).to eq([[], ["archives"]])
-    end
-  end
-
-  describe "#columns" do
-    it "returns the columns per statement" do
-      expect(statements.map(&:columns)).to eq([["hoge"], ["fuga"]])
-    end
-  end
-
-  describe "#statement_type" do
-    it "returns the statement's type" do
-      expect(Finox.parse("SELECT 1").statements.first.statement_type).to eq("Query")
-    end
-  end
-
-  describe "#normalize" do
-    it "returns the normalized SQL of the single statement" do
-      statements = Finox.parse("SELECT 1; SELECT * FROM users WHERE id = 2").statements
-
-      expect(statements.map(&:normalize)).to eq(["SELECT ?", "SELECT * FROM users WHERE id = ?"])
-    end
-  end
-
-  describe "#fingerprint" do
-    it "returns the fingerprint per statement" do
-      fingerprints = statements.map(&:fingerprint)
-
-      expect(fingerprints).to all(match(/\A[0-9a-f]{16}\z/))
-      expect(fingerprints.uniq.length).to eq(2)
-    end
-  end
-
   describe "#to_h" do
     it "returns the statement AST as a Hash" do
       statement = Finox.parse("SELECT `id` FROM `users`").statements.first
