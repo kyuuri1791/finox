@@ -24,13 +24,7 @@ struct ParseResult {
 
 impl ParseResult {
     fn statements(ruby: &Ruby, rb_self: &Self) -> Result<Value, Error> {
-        let statements = ruby.ary_new_capa(rb_self.statements.len());
-        for statement in &rb_self.statements {
-            statements.push(ParsedStatement {
-                statement: statement.clone(),
-            })?;
-        }
-        Ok(statements.as_value())
+        serde_magnus::serialize(ruby, &rb_self.statements)
     }
 
     fn tables(&self) -> Vec<String> {
@@ -67,17 +61,6 @@ impl ParseResult {
 
     fn fingerprint(&self) -> String {
         fingerprint(&self.normalize())
-    }
-}
-
-#[magnus::wrap(class = "Finox::Statement", free_immediately, size)]
-struct ParsedStatement {
-    statement: Statement,
-}
-
-impl ParsedStatement {
-    fn to_h(ruby: &Ruby, rb_self: &Self) -> Result<Value, Error> {
-        serde_magnus::serialize(ruby, &rb_self.statement)
     }
 }
 
@@ -356,9 +339,6 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     result.define_method("statement_types", method!(ParseResult::statement_types, 0))?;
     result.define_method("normalize", method!(ParseResult::normalize, 0))?;
     result.define_method("fingerprint", method!(ParseResult::fingerprint, 0))?;
-
-    let statement = module.define_class("Statement", ruby.class_object())?;
-    statement.define_method("to_h", method!(ParsedStatement::to_h, 0))?;
 
     module.define_singleton_method("parse", function!(parse, 1))?;
     Ok(())

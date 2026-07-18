@@ -188,23 +188,12 @@ RSpec.describe Finox do
   end
 
   describe "#statements" do
-    it "returns one Finox::Statement per statement" do
+    it "returns the AST of each statement as plain Hashes" do
       statements = Finox.parse("SELECT 1; SELECT 2").statements
 
       expect(statements).to be_an(Array)
       expect(statements.length).to eq(2)
-      expect(statements).to all(be_a(Finox::Statement))
-    end
-  end
-end
-
-RSpec.describe Finox::Statement do
-  describe "#to_h" do
-    it "returns the statement AST as a Hash" do
-      statement = Finox.parse("SELECT `id` FROM `users`").statements.first
-
-      expect(statement.to_h).to be_a(Hash)
-      expect(statement.to_h).to have_key("Query")
+      expect(statements).to all(be_a(Hash).and(have_key("Query")))
     end
   end
 end

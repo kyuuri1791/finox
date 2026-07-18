@@ -18,8 +18,8 @@
 - Add `Finox::Result#fingerprint`, which returns a stable 64-bit hex hash of
   the normalized SQL, for grouping queries that differ only in literals or
   formatting.
-- Add `Finox::Result#statements`, which returns one `Finox::Statement` per
-  parsed statement, exposing the AST as plain Hashes/Arrays via `#to_h`.
+- Add `Finox::Result#statements`, which returns the AST of each parsed
+  statement as plain Hashes/Arrays.
 
 ## [0.1.0] - 2026-07-17
 
