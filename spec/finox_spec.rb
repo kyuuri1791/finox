@@ -195,5 +195,11 @@ RSpec.describe Finox do
       expect(statements.length).to eq(2)
       expect(statements).to all(be_a(Hash).and(have_key("Query")))
     end
+
+    it "uses String keys for variant names and fields alike" do
+      ast = Finox.parse("SELECT id FROM users").statements.first
+
+      expect(ast.dig("Query", "body", "Select", "projection").length).to eq(1)
+    end
   end
 end

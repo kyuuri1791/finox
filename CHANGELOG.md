@@ -19,7 +19,8 @@
   the normalized SQL, for grouping queries that differ only in literals or
   formatting.
 - Add `Finox::Result#statements`, which returns the AST of each parsed
-  statement as plain Hashes/Arrays.
+  statement as plain Hashes/Arrays. All keys are Strings (previously enum
+  variant names were Strings but struct fields were Symbols).
 
 ## [0.1.0] - 2026-07-17
 

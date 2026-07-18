@@ -2,7 +2,9 @@ use std::collections::HashSet;
 use std::fmt::{self, Write as _};
 use std::ops::ControlFlow;
 
-use magnus::{function, method, prelude::*, value::Lazy, Error, ExceptionClass, Ruby, Value};
+use magnus::{
+    function, method, prelude::*, value::Lazy, Error, ExceptionClass, IntoValue, Ruby, Value,
+};
 use sqlparser::ast::{
     visit_expressions_mut, AssignmentTarget, Expr, FromTable, ObjectName, ObjectType, Query,
     Statement, TableFactor, TableObject, TableWithJoins, Value as SqlValue, Visit, Visitor,
@@ -24,7 +26,9 @@ struct ParseResult {
 
 impl ParseResult {
     fn statements(ruby: &Ruby, rb_self: &Self) -> Result<Value, Error> {
-        serde_magnus::serialize(ruby, &rb_self.statements)
+        let json = serde_json::to_value(&rb_self.statements)
+            .map_err(|e| Error::new(ruby.exception_runtime_error(), e.to_string()))?;
+        json_to_ruby(ruby, &json)
     }
 
     fn tables(&self) -> Vec<String> {
@@ -66,6 +70,39 @@ impl ParseResult {
 
 fn fingerprint(sql: &str) -> String {
     format!("{:016x}", XxHash64::oneshot(0, sql.as_bytes()))
+}
+
+fn json_to_ruby(ruby: &Ruby, value: &serde_json::Value) -> Result<Value, Error> {
+    use serde_json::Value as Json;
+
+    Ok(match value {
+        Json::Null => ruby.qnil().as_value(),
+        Json::Bool(boolean) => (*boolean).into_value_with(ruby),
+        Json::Number(number) => {
+            if let Some(int) = number.as_i64() {
+                int.into_value_with(ruby)
+            } else if let Some(int) = number.as_u64() {
+                int.into_value_with(ruby)
+            } else {
+                number.as_f64().into_value_with(ruby)
+            }
+        }
+        Json::String(string) => string.as_str().into_value_with(ruby),
+        Json::Array(items) => {
+            let array = ruby.ary_new_capa(items.len());
+            for item in items {
+                array.push(json_to_ruby(ruby, item)?)?;
+            }
+            array.as_value()
+        }
+        Json::Object(map) => {
+            let hash = ruby.hash_new_capa(map.len());
+            for (key, item) in map {
+                hash.aset(key.as_str(), json_to_ruby(ruby, item)?)?;
+            }
+            hash.as_value()
+        }
+    })
 }
 
 fn normalize_statement(statement: &Statement) -> String {

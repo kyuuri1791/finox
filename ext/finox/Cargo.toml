@@ -11,6 +11,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 magnus = "0.8"
-serde_magnus = "0.11.0"
+serde_json = { version = "1", features = ["preserve_order"] }
 sqlparser = { version = "0.62.0", features = ["serde", "visitor"] }
 twox-hash = { version = "2.1", default-features = false, features = ["xxhash64"] }
