@@ -52,6 +52,58 @@ RSpec.describe Finox do
     end
   end
 
+  describe "#select_tables" do
+    it "returns the tables read from" do
+      expect(Finox.parse("SELECT * FROM users JOIN orders ON 1 = 1").select_tables).to eq(%w[users orders])
+    end
+
+    it "excludes tables only written to" do
+      expect(Finox.parse("INSERT INTO logs SELECT * FROM events").select_tables).to eq(["events"])
+      expect(Finox.parse("DELETE FROM sessions WHERE id = 1").select_tables).to eq([])
+    end
+
+    it "includes source tables of DML" do
+      sql = "UPDATE users SET name = 'a' WHERE id IN (SELECT user_id FROM admins)"
+
+      expect(Finox.parse(sql).select_tables).to eq(["admins"])
+    end
+
+    it "includes tables both read and written" do
+      expect(Finox.parse("INSERT INTO users SELECT * FROM users").select_tables).to eq(["users"])
+    end
+  end
+
+  describe "#dml_tables" do
+    it "returns the tables written to by INSERT, UPDATE and DELETE" do
+      expect(Finox.parse("INSERT INTO logs (msg) VALUES ('x')").dml_tables).to eq(["logs"])
+      expect(Finox.parse("UPDATE users SET name = 'a'").dml_tables).to eq(["users"])
+      expect(Finox.parse("DELETE FROM sessions").dml_tables).to eq(["sessions"])
+    end
+
+    it "excludes tables only read from" do
+      expect(Finox.parse("INSERT INTO logs SELECT * FROM events").dml_tables).to eq(["logs"])
+      expect(Finox.parse("SELECT * FROM users").dml_tables).to eq([])
+    end
+
+    it "returns only the deleted tables of a multi-table DELETE" do
+      expect(Finox.parse("DELETE t1 FROM t1 JOIN t2 ON t1.id = t2.id").dml_tables).to eq(["t1"])
+    end
+  end
+
+  describe "#ddl_tables" do
+    it "returns the tables targeted by DDL" do
+      expect(Finox.parse("CREATE TABLE t (id INT)").ddl_tables).to eq(["t"])
+      expect(Finox.parse("ALTER TABLE users ADD COLUMN age INT").ddl_tables).to eq(["users"])
+      expect(Finox.parse("DROP TABLE users, sessions").ddl_tables).to eq(%w[users sessions])
+      expect(Finox.parse("TRUNCATE TABLE logs").ddl_tables).to eq(["logs"])
+    end
+
+    it "excludes tables only read from" do
+      expect(Finox.parse("CREATE TABLE t2 AS SELECT * FROM t1").ddl_tables).to eq(["t2"])
+      expect(Finox.parse("SELECT * FROM users").ddl_tables).to eq([])
+    end
+  end
+
   describe "#columns" do
     it "returns the columns referenced by the query" do
       expect(Finox.parse("SELECT id, name FROM users WHERE id = 1").columns).to eq(%w[id name])
@@ -119,6 +171,22 @@ RSpec.describe Finox do
     end
   end
 
+  describe "#fingerprint" do
+    it "ignores differences in literals and formatting" do
+      expect(Finox.parse("SELECT * FROM users WHERE id = 1").fingerprint)
+        .to eq(Finox.parse("select *  from users\nwhere id=42").fingerprint)
+    end
+
+    it "differs for structurally different queries" do
+      expect(Finox.parse("SELECT * FROM users").fingerprint)
+        .not_to eq(Finox.parse("SELECT * FROM orders").fingerprint)
+    end
+
+    it "returns a 16-character hex string" do
+      expect(Finox.parse("SELECT 1").fingerprint).to match(/\A[0-9a-f]{16}\z/)
+    end
+  end
+
   describe "#statements" do
     it "returns one Finox::Statement per statement" do
       statements = Finox.parse("SELECT 1; SELECT 2").statements
@@ -132,10 +200,29 @@ end
 
 RSpec.describe Finox::Statement do
   let(:statements) { Finox.parse("SELECT hoge FROM table1; SELECT fuga FROM table2").statements }
+  let(:mixed) { Finox.parse("INSERT INTO logs SELECT * FROM events; DROP TABLE archives").statements }
 
   describe "#tables" do
     it "returns the tables per statement" do
       expect(statements.map(&:tables)).to eq([["table1"], ["table2"]])
+    end
+  end
+
+  describe "#select_tables" do
+    it "returns the read tables per statement" do
+      expect(mixed.map(&:select_tables)).to eq([["events"], []])
+    end
+  end
+
+  describe "#dml_tables" do
+    it "returns the written tables per statement" do
+      expect(mixed.map(&:dml_tables)).to eq([["logs"], []])
+    end
+  end
+
+  describe "#ddl_tables" do
+    it "returns the DDL-targeted tables per statement" do
+      expect(mixed.map(&:ddl_tables)).to eq([[], ["archives"]])
     end
   end
 
@@ -156,6 +243,15 @@ RSpec.describe Finox::Statement do
       statements = Finox.parse("SELECT 1; SELECT * FROM users WHERE id = 2").statements
 
       expect(statements.map(&:normalize)).to eq(["SELECT ?", "SELECT * FROM users WHERE id = ?"])
+    end
+  end
+
+  describe "#fingerprint" do
+    it "returns the fingerprint per statement" do
+      fingerprints = statements.map(&:fingerprint)
+
+      expect(fingerprints).to all(match(/\A[0-9a-f]{16}\z/))
+      expect(fingerprints.uniq.length).to eq(2)
     end
   end
 

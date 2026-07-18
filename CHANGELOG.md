@@ -9,13 +9,19 @@
   targets), deduplicated.
 - Add `Finox::Result#statement_types`, which returns the type of each parsed
   statement (sqlparser's variant names, e.g. `"Query"`, `"Insert"`).
+- Add `Finox::Result#select_tables`, `#dml_tables` and `#ddl_tables`, which
+  classify the referenced tables into read, written by DML and targeted by DDL
+  (a table appearing in multiple roles is listed in each).
 - Add `Finox::Result#normalize`, which returns the SQL with literals replaced
   by `?` placeholders, deparsed from the AST (normalizing formatting and
   keyword case).
+- Add `Finox::Result#fingerprint`, which returns a stable 64-bit hex hash of
+  the normalized SQL, for grouping queries that differ only in literals or
+  formatting.
 - Add `Finox::Result#statements`, which returns one `Finox::Statement` per
-  parsed statement, exposing per-statement `#tables`, `#columns`,
-  `#statement_type` and `#normalize` as well as `#to_h` (the AST as plain
-  Hashes/Arrays).
+  parsed statement, exposing per-statement `#tables`, `#select_tables`,
+  `#dml_tables`, `#ddl_tables`, `#columns`, `#statement_type`, `#normalize`
+  and `#fingerprint` as well as `#to_h` (the AST as plain Hashes/Arrays).
 
 ## [0.1.0] - 2026-07-17
 
