@@ -3,7 +3,10 @@ use std::fmt::{self, Write as _};
 use std::ops::ControlFlow;
 
 use magnus::{function, method, prelude::*, value::Lazy, Error, ExceptionClass, Ruby, Value};
-use sqlparser::ast::{AssignmentTarget, Expr, ObjectName, Query, Statement, Visit, Visitor};
+use sqlparser::ast::{
+    visit_expressions_mut, AssignmentTarget, Expr, ObjectName, Query, Statement,
+    Value as SqlValue, Visit, Visitor,
+};
 use sqlparser::{dialect::MySqlDialect, parser::Parser};
 
 static PARSE_ERROR: Lazy<ExceptionClass> = Lazy::new(|ruby| {
@@ -40,6 +43,14 @@ impl ParseResult {
     fn statement_types(&self) -> Vec<String> {
         self.statements.iter().map(statement_type).collect()
     }
+
+    fn normalize(&self) -> String {
+        self.statements
+            .iter()
+            .map(normalize_statement)
+            .collect::<Vec<_>>()
+            .join("; ")
+    }
 }
 
 #[magnus::wrap(class = "Finox::Statement", free_immediately, size)]
@@ -63,6 +74,21 @@ impl ParsedStatement {
     fn statement_type(&self) -> String {
         statement_type(&self.statement)
     }
+
+    fn normalize(&self) -> String {
+        normalize_statement(&self.statement)
+    }
+}
+
+fn normalize_statement(statement: &Statement) -> String {
+    let mut statement = statement.clone();
+    let _ = visit_expressions_mut(&mut statement, |expr| {
+        if let Expr::Value(value) = expr {
+            value.value = SqlValue::Placeholder("?".to_string());
+        }
+        ControlFlow::<()>::Continue(())
+    });
+    statement.to_string()
 }
 
 fn statement_type(statement: &Statement) -> String {
@@ -215,12 +241,14 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     result.define_method("tables", method!(ParseResult::tables, 0))?;
     result.define_method("columns", method!(ParseResult::columns, 0))?;
     result.define_method("statement_types", method!(ParseResult::statement_types, 0))?;
+    result.define_method("normalize", method!(ParseResult::normalize, 0))?;
 
     let statement = module.define_class("Statement", ruby.class_object())?;
     statement.define_method("to_h", method!(ParsedStatement::to_h, 0))?;
     statement.define_method("tables", method!(ParsedStatement::tables, 0))?;
     statement.define_method("columns", method!(ParsedStatement::columns, 0))?;
     statement.define_method("statement_type", method!(ParsedStatement::statement_type, 0))?;
+    statement.define_method("normalize", method!(ParsedStatement::normalize, 0))?;
 
     module.define_singleton_method("parse", function!(parse, 1))?;
     Ok(())

@@ -97,6 +97,28 @@ RSpec.describe Finox do
     end
   end
 
+  describe "#normalize" do
+    it "replaces literals with placeholders" do
+      sql = "SELECT * FROM users WHERE id = 1 AND name = 'foo'"
+
+      expect(Finox.parse(sql).normalize).to eq("SELECT * FROM users WHERE id = ? AND name = ?")
+    end
+
+    it "normalizes formatting and keyword case" do
+      expect(Finox.parse("select  *\nfrom users where id=1").normalize)
+        .to eq("SELECT * FROM users WHERE id = ?")
+    end
+
+    it "replaces each element of IN lists" do
+      expect(Finox.parse("SELECT * FROM users WHERE id IN (1, 2, 3)").normalize)
+        .to eq("SELECT * FROM users WHERE id IN (?, ?, ?)")
+    end
+
+    it "joins multiple statements with semicolons" do
+      expect(Finox.parse("SELECT 1; SELECT 2").normalize).to eq("SELECT ?; SELECT ?")
+    end
+  end
+
   describe "#statements" do
     it "returns one Finox::Statement per statement" do
       statements = Finox.parse("SELECT 1; SELECT 2").statements
@@ -126,6 +148,14 @@ RSpec.describe Finox::Statement do
   describe "#statement_type" do
     it "returns the statement's type" do
       expect(Finox.parse("SELECT 1").statements.first.statement_type).to eq("Query")
+    end
+  end
+
+  describe "#normalize" do
+    it "returns the normalized SQL of the single statement" do
+      statements = Finox.parse("SELECT 1; SELECT * FROM users WHERE id = 2").statements
+
+      expect(statements.map(&:normalize)).to eq(["SELECT ?", "SELECT * FROM users WHERE id = ?"])
     end
   end
 
