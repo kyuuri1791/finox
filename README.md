@@ -83,8 +83,10 @@ resolution:
 
 `#normalize` replaces literals with `?` placeholders and deparses from the
 AST, so formatting and keyword case are normalized as well. `#fingerprint` is
-a stable 64-bit hex hash (xxhash64) of the normalized SQL — queries differing
-only in literals or formatting share a fingerprint:
+a 64-bit hex hash (xxhash64) of the normalized SQL — stable across literal
+and formatting differences, but not guaranteed to be stable across finox
+versions, since the normalized form depends on the bundled sqlparser-rs.
+Recompute stored fingerprints when upgrading finox.
 
 ```ruby
 Finox.parse("select * from users where id=1").normalize

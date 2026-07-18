@@ -15,9 +15,10 @@
 - Add `Finox::Result#normalize`, which returns the SQL with literals replaced
   by `?` placeholders, deparsed from the AST (normalizing formatting and
   keyword case).
-- Add `Finox::Result#fingerprint`, which returns a stable 64-bit hex hash of
-  the normalized SQL, for grouping queries that differ only in literals or
-  formatting.
+- Add `Finox::Result#fingerprint`, which returns a 64-bit hex hash of the
+  normalized SQL, for grouping queries that differ only in literals or
+  formatting. Fingerprints are not guaranteed to be stable across finox
+  versions.
 - Add `Finox::Result#statements`, which returns the AST of each parsed
   statement as plain Hashes/Arrays. All keys are Strings (previously enum
   variant names were Strings but struct fields were Symbols).
