@@ -12,4 +12,4 @@ crate-type = ["cdylib"]
 [dependencies]
 magnus = "0.8"
 serde_magnus = "0.11.0"
-sqlparser = { version = "0.62.0", features = ["serde"] }
+sqlparser = { version = "0.62.0", features = ["serde", "visitor"] }

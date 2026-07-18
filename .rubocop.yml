@@ -1,6 +1,13 @@
 AllCops:
   TargetRubyVersion: 3.1
 
+Metrics/BlockLength:
+  inherit_mode:
+    merge:
+      - Exclude
+  Exclude:
+    - "spec/**/*"
+
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
